@@ -5,6 +5,7 @@ import '../styles/calculator.css';
 const Calculator = () => {
     const [displayValue, setDisplayValue] = useState('0');
     const [storedValue, setStoredValue] = useState('0');
+    const [inputHistory, setInputHistory] = useState('');
   
     const handleButtonClick = (value, type) => {
       // Implement functionality based on button type
@@ -12,15 +13,15 @@ const Calculator = () => {
         setDisplayValue((prevDisplay) =>
           prevDisplay === '0' ? value.toString() : prevDisplay + value
         );
+        setInputHistory((prevHistory) => prevHistory + value);
       } else if (type === 'enter') {
         calculateResult();
       }
 
-      if (type === 'clear' && value === 'All Clear'){
-        setDisplayValue((prevDisplay) =>
-            prevDisplay = '0'
-        );
-      } 
+    if (type === 'clear' && value === 'All Clear') {
+      setDisplayValue('0');
+      setInputHistory('');
+    }
       //(handle other types)
     };
   
@@ -31,8 +32,10 @@ const Calculator = () => {
       try {
         const result = stringEval(displayValue);
         setDisplayValue(result.toString());
+        setInputHistory((prevHistory) => prevHistory);
       } catch (error) {
         setDisplayValue('Error');
+        setInputHistory('');
       }
     };
 
@@ -40,6 +43,11 @@ const Calculator = () => {
   return (
     <div className="calculator">
       <div className="display">{displayValue}</div>
+      <div className="memory-board">
+        <div className="memory-store">M</div>
+        <div className="memory-input">{inputHistory}</div>
+      </div>
+      <div className ="buttons-board">
       <div className="buttons">
         {calculatorButtons.map((button, index) => (
           <button
@@ -50,6 +58,7 @@ const Calculator = () => {
             {button.text}
           </button>
         ))}
+      </div>
       </div>
     </div>
   );
