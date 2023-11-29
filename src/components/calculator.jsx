@@ -7,35 +7,61 @@ const Calculator = () => {
   const [storedValue, setStoredValue] = useState('0');
   const [inputHistory, setInputHistory] = useState('');
   const [hasPoint, setHasPoint] = useState(false); // Whether the current number has a decimal point already
+  const [lastEvaluated, setLastEvaluated] = useState(false);
+  const [consecutiveDigitsCount, setConsecutiveDigitsCount] = useState(0);
+
+  const MAX_RESULT_LENGTH = 13; // Set your desired maximum result length
+
+  const handleMemoryOperationResult = (result) => {
+    let formattedResult = result.toString();
+  
+    // Truncate the result if it exceeds the maximum length
+    if (formattedResult.includes('e')) {
+      // If in exponential notation
+      const [mantissa, exponent] = formattedResult.split('e');
+      const maxMantissaLength = MAX_RESULT_LENGTH - exponent.length - 1; // Leave space for the 'e' and exponent
+      formattedResult = mantissa.slice(0, maxMantissaLength) + 'e' + exponent;
+    } else if (formattedResult.length > MAX_RESULT_LENGTH) {
+      // If in regular numeric form
+      formattedResult = formattedResult.slice(0, MAX_RESULT_LENGTH);
+    }
+  
+    setDisplayValue(formattedResult);
+    setInputHistory(formattedResult);
+  };
+  
+  const handleMemoryOperationError = () => {
+    setDisplayValue('Error');
+    setInputHistory('');
+  };
   
   const handleButtonClick = (value, type) => {
-    //const maxDisplayLength = 10; // Set your desired maximum display length
-    // const maxConsecutiveIntegers = 9; // Set the maximum consecutive integers allowed
-
-    // const currentDisplay = displayValue.endsWith('.') ? displayValue.slice(0, -1) : displayValue;
-    // const consecutiveIntegers = currentDisplay.replace(/\D/g, '');
-
-    //if (type === 'number' && /\d/.test(value)) {
-      // Check if adding another integer would exceed the consecutive limit
-      
-      // if (consecutiveIntegers.length >= maxConsecutiveIntegers && value != '.' ) {
-      //   // If the consecutive integer limit is reached, prevent further input
-      //   return;
-      // }
-    //}
-
-    // if (displayValue.length >= maxDisplayLength && value != '.' ) {
-    //   // If the display value has reached the limit, prevent further input
-    //   return;
-    // }
 
     const isOperator = (char) => {
       return char === '+' || char === '-' || char === '*' || char === '/';
     };
     
     if (type === 'number') {
+      if (consecutiveDigitsCount >= 9 && !isOperator(value)) {
+        return;
+      } else {
+        // Reset display if it contains non-digit characters
+      if (!/^\d+$/.test(displayValue)) {
+        setDisplayValue(value.toString());
+        setInputHistory(value.toString());
+      } else {
+        // Increment the counter only if the entered value is a digit
+        if (/\d/.test(value)) {
+          setConsecutiveDigitsCount((prevCount) => prevCount + 1);
+        }
       if (hasPoint && value === '.') return;
       if (!hasPoint && value === '.') setHasPoint(true);
+      if (lastEvaluated) {
+        // Clear the display and input history after an evaluation
+        setDisplayValue(value.toString());
+        setInputHistory(value.toString());
+        setLastEvaluated(false);
+      } else {
       setDisplayValue((prevDisplay) => {
         if (isOperator(inputHistory[inputHistory.length - 1])) {
           return value.toString();
@@ -44,7 +70,10 @@ const Calculator = () => {
         }
       });
       setInputHistory((prevHistory) => prevHistory + value);
+    }}}
     } else if (type === 'operator') {
+      setConsecutiveDigitsCount(0);
+      setLastEvaluated(false);
       setHasPoint(false);
       const lastInput = inputHistory[inputHistory.length - 1];
       if (isOperator(lastInput)) {
@@ -57,9 +86,12 @@ const Calculator = () => {
       }
     } else if (type === 'enter') {
       calculateResult(inputHistory);
+      setLastEvaluated(true); // Set the evaluation state
     } else if (type === 'memory') {
       handleMemory(value);
     } else if (type === 'clear') {
+      setConsecutiveDigitsCount(0);
+
       handleClear(value);
     } else {
       switch (type) {
@@ -83,16 +115,30 @@ const Calculator = () => {
   const calculateResult = () => {
     try {
       const result = stringEval(inputHistory);
+  
+      let formattedResult;
       if (Math.abs(result) > 1000000000) {
         // Convert to exponential notation if the result is larger than 100,000,000
-        setDisplayValue(result.toExponential());
+        formattedResult = result.toExponential();
       } else {
-        setDisplayValue(result.toString());
+        formattedResult = result.toString();
       }
-      setInputHistory(result.toString());
+  
+      // Truncate the result if it exceeds the maximum length
+      if (formattedResult.includes('e')) {
+        // If in exponential notation
+        const [mantissa, exponent] = formattedResult.split('e');
+        const maxMantissaLength = MAX_RESULT_LENGTH - exponent.length - 1; // Leave space for the 'e' and exponent
+        formattedResult = mantissa.slice(0, maxMantissaLength) + 'e' + exponent;
+      } else if (formattedResult.length > MAX_RESULT_LENGTH) {
+        // If in regular numeric form
+        formattedResult = formattedResult.slice(0, MAX_RESULT_LENGTH);
+      }
+  
+      setDisplayValue(formattedResult);
+      setInputHistory(formattedResult);
     } catch (error) {
-      setDisplayValue('Error');
-      setInputHistory('');
+      handleMemoryOperationError();
     }
   };
 
@@ -109,13 +155,23 @@ const Calculator = () => {
         break;
       case 'Memory Recall':
         setDisplayValue(storedValue);
-        setInputHistory(storedValue);
+        setInputHistory(storedValue)
         break;
         case 'Memory Subtract':
-          setDisplayValue((displayValue) => stringEval(displayValue + '-' + storedValue));
+          try {
+            const result = stringEval(displayValue + '-' + storedValue);
+            handleMemoryOperationResult(result);
+          } catch (error) {
+            handleMemoryOperationError();
+          }
           break;
         case 'Memory Addition':
-          setDisplayValue((displayValue) => stringEval(displayValue + '+' + storedValue));
+          try {
+            const result = stringEval(displayValue + '+' + storedValue);
+            handleMemoryOperationResult(result);
+          } catch (error) {
+            handleMemoryOperationError();
+          }
           break;
       default:
         break;
@@ -129,37 +185,23 @@ const Calculator = () => {
       setStoredValue('0');
 
     } else if (value === 'Clear') {
-    //   setDisplayValue((prevDisplay) =>
-    //   prevDisplay.length > 1 ? prevDisplay.slice(0, -1) : '0'
-    // );
-    // setInputHistory((prevHistory) =>
-    //   prevHistory.length > 1 ? prevHistory.slice(0, -1) : ''
-    // );
-      setDisplayValue('');
+      setDisplayValue('0');
       setInputHistory('');
     }
   };
 
   const handleSign = () => {
     try {
-      const result = stringEval(displayValue + '*(-1)');
-      setDisplayValue(result.toString());
-      if (inputHistory.substring(0, 2) == '-('
-          && inputHistory.charAt(inputHistory.length-1) == ')') {
-            setInputHistory((prevHistory) => prevHistory.substring(2, inputHistory.length-1));
-      } else if (inputHistory != '') { 
-          setInputHistory((prevHistory) => '-(' + prevHistory + ')');
-      }
+      const result = stringEval(inputHistory + '*(-1)');
+      handleMemoryOperationResult(result);
     } catch (error) {
-      setDisplayValue('Error');
-      setInputHistory('');
+      handleMemoryOperationError();
     }
   }
 
   const handleSqrt = () => {
     const operators = ['+', '-', '*', '/']; // List of operators
     const operatorIndexes = [];
-    let oldHistory = "";
   
     try {
       operators.forEach((operator) => {
@@ -169,18 +211,11 @@ const Calculator = () => {
         }
       });
   
-      if (operatorIndexes.length > 0) {
-        const lastOperatorIndex = operatorIndexes[operatorIndexes.length - 1].index;
-        oldHistory = inputHistory.substring(0, lastOperatorIndex + 1); // Adjust to include the operator
-      }
       const result = Math.sqrt(stringEval(displayValue));
-      setDisplayValue(result.toString());
-      if (inputHistory !== '') {
-        setInputHistory(oldHistory + result.toString());
-      }
+      handleMemoryOperationResult(result);
+
     } catch (error) {
-      setDisplayValue('Error');
-      setInputHistory('');
+      handleMemoryOperationError();
     }
   };
   
@@ -188,7 +223,6 @@ const Calculator = () => {
   const handlePercent = () => {
     const operators = ['+', '-', '*', '/']; // List of operators
     const operatorIndexes = [];
-    let oldHistory = "";
   
     try {
       operators.forEach((operator) => {
@@ -198,18 +232,11 @@ const Calculator = () => {
         }
       });
   
-      if (operatorIndexes.length > 0) {
-        const lastOperatorIndex = operatorIndexes[operatorIndexes.length - 1].index;
-        oldHistory = inputHistory.substring(0, lastOperatorIndex + 1); // Adjust to include the operator
-      }
       const result = stringEval(displayValue + '/ 100');
-      setDisplayValue(result.toString());
-      if (inputHistory !== '') {
-        setInputHistory(oldHistory + result.toString());
-      }
+      handleMemoryOperationResult(result);
+
     } catch (error) {
-      setDisplayValue('Error');
-      setInputHistory('');
+      handleMemoryOperationError();
     }
   };
 
