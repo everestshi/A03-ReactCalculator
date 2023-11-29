@@ -6,32 +6,36 @@ const Calculator = () => {
   const [displayValue, setDisplayValue] = useState('0');
   const [storedValue, setStoredValue] = useState('0');
   const [inputHistory, setInputHistory] = useState('');
+  const [hasPoint, setHasPoint] = useState(false); // Whether the current number has a decimal point already
   
   const handleButtonClick = (value, type) => {
-    const maxDisplayLength = 10; // Set your desired maximum display length
-    const maxConsecutiveIntegers = 9; // Set the maximum consecutive integers allowed
+    //const maxDisplayLength = 10; // Set your desired maximum display length
+    // const maxConsecutiveIntegers = 9; // Set the maximum consecutive integers allowed
 
-    if (type === 'number' && /\d/.test(value)) {
+    // const currentDisplay = displayValue.endsWith('.') ? displayValue.slice(0, -1) : displayValue;
+    // const consecutiveIntegers = currentDisplay.replace(/\D/g, '');
+
+    //if (type === 'number' && /\d/.test(value)) {
       // Check if adding another integer would exceed the consecutive limit
-      const currentDisplay = displayValue.endsWith('.') ? displayValue.slice(0, -1) : displayValue;
-      const consecutiveIntegers = currentDisplay.replace(/\D/g, '');
+      
+      // if (consecutiveIntegers.length >= maxConsecutiveIntegers && value != '.' ) {
+      //   // If the consecutive integer limit is reached, prevent further input
+      //   return;
+      // }
+    //}
 
-      if (consecutiveIntegers.length >= maxConsecutiveIntegers) {
-        // If the consecutive integer limit is reached, prevent further input
-        return;
-      }
-    }
-
-    if (displayValue.length >= maxDisplayLength) {
-      // If the display value has reached the limit, prevent further input
-      return;
-    }
+    // if (displayValue.length >= maxDisplayLength && value != '.' ) {
+    //   // If the display value has reached the limit, prevent further input
+    //   return;
+    // }
 
     const isOperator = (char) => {
       return char === '+' || char === '-' || char === '*' || char === '/';
     };
     
     if (type === 'number') {
+      if (hasPoint && value === '.') return;
+      if (!hasPoint && value === '.') setHasPoint(true);
       setDisplayValue((prevDisplay) => {
         if (isOperator(inputHistory[inputHistory.length - 1])) {
           return value.toString();
@@ -41,8 +45,12 @@ const Calculator = () => {
       });
       setInputHistory((prevHistory) => prevHistory + value);
     } else if (type === 'operator') {
+      setHasPoint(false);
       const lastInput = inputHistory[inputHistory.length - 1];
       if (isOperator(lastInput)) {
+        setInputHistory((prevHistory) => prevHistory.slice(0, -1) + value);
+      } else if (lastInput === '.') {
+        setDisplayValue((prevDisplay) => prevDisplay.slice(0, -1));
         setInputHistory((prevHistory) => prevHistory.slice(0, -1) + value);
       } else {
         setInputHistory((prevHistory) => prevHistory + value);
@@ -121,15 +129,14 @@ const Calculator = () => {
       setStoredValue('0');
 
     } else if (value === 'Clear') {
-      // setDisplayValue('0');
-      // setInputHistory('');
-      setDisplayValue((prevDisplay) =>
-      prevDisplay.length > 1 ? prevDisplay.slice(0, -1) : '0'
-    );
-    setInputHistory((prevHistory) =>
-      prevHistory.length > 1 ? prevHistory.slice(0, -1) : ''
-    );
-
+    //   setDisplayValue((prevDisplay) =>
+    //   prevDisplay.length > 1 ? prevDisplay.slice(0, -1) : '0'
+    // );
+    // setInputHistory((prevHistory) =>
+    //   prevHistory.length > 1 ? prevHistory.slice(0, -1) : ''
+    // );
+      setDisplayValue('');
+      setInputHistory('');
     }
   };
 
@@ -205,6 +212,8 @@ const Calculator = () => {
       setInputHistory('');
     }
   };
+
+  
   
 
   return (
