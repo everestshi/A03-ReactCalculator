@@ -28,6 +28,7 @@ const Calculator = () => {
     try {
       const result = stringEval(displayValue);
       setDisplayValue(result.toString());
+      // setInputHistory((prevHistory) => prevHistory);
       setInputHistory(result.toString());
     } catch (error) {
       setDisplayValue('Error');
