@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { calculatorButtons } from '../data/calculatorButtons';
 import '../styles/calculator.css';
 
@@ -8,13 +8,28 @@ const Calculator = () => {
   const [inputHistory, setInputHistory] = useState('');
   
   const handleButtonClick = (value, type) => {
-    if (type === 'number' || type === 'operator') {
-      setDisplayValue((prevDisplay) =>
-        prevDisplay === '0' ? value.toString() : prevDisplay + value
-      );
+    const isOperator = (char) => {
+      return char === '+' || char === '-' || char === '*' || char === '/';
+    };
+    
+    if (type === 'number') {
+      setDisplayValue((prevDisplay) => {
+        if (isOperator(inputHistory[inputHistory.length - 1])) {
+          return value.toString();
+        } else {
+          return prevDisplay === '0' ? value.toString() : prevDisplay + value;
+        }
+      });
       setInputHistory((prevHistory) => prevHistory + value);
+    } else if (type === 'operator') {
+      const lastInput = inputHistory[inputHistory.length - 1];
+      if (isOperator(lastInput)) {
+        setInputHistory((prevHistory) => prevHistory.slice(0, -1) + value);
+      } else {
+        setInputHistory((prevHistory) => prevHistory + value);
+      }
     } else if (type === 'enter') {
-      calculateResult(inputHistory + displayValue);
+      calculateResult(inputHistory);
     } else if (type === 'memory') {
       handleMemory(value);
     } else if (type === 'clear') {
@@ -40,9 +55,13 @@ const Calculator = () => {
 
   const calculateResult = () => {
     try {
-      const result = stringEval(displayValue);
-      setDisplayValue(result.toString());
-      // setInputHistory((prevHistory) => prevHistory);
+      const result = stringEval(inputHistory);
+      if (Math.abs(result) > 1000000000) {
+        // Convert to exponential notation if the result is larger than 100,000,000
+        setDisplayValue(result.toExponential());
+      } else {
+        setDisplayValue(result.toString());
+      }
       setInputHistory(result.toString());
     } catch (error) {
       setDisplayValue('Error');
@@ -51,9 +70,12 @@ const Calculator = () => {
   };
 
   const handleMemory = (value) => {
+    const isInteger = /^\d+$/.test(displayValue);
     switch (value) {
       case 'Memory Save':
-        setStoredValue(displayValue);
+        if (isInteger){
+          setStoredValue(displayValue);
+        }
         break;
       case 'Memory Clear':
         setStoredValue('0');
@@ -103,30 +125,62 @@ const Calculator = () => {
   }
 
   const handleSqrt = () => {
+    const operators = ['+', '-', '*', '/']; // List of operators
+    const operatorIndexes = [];
+    let oldHistory = "";
+  
     try {
+      operators.forEach((operator) => {
+        let index = inputHistory.lastIndexOf(operator);
+        if (index !== -1) {
+          operatorIndexes.push({ index, operator });
+        }
+      });
+  
+      if (operatorIndexes.length > 0) {
+        const lastOperatorIndex = operatorIndexes[operatorIndexes.length - 1].index;
+        oldHistory = inputHistory.substring(0, lastOperatorIndex + 1); // Adjust to include the operator
+      }
       const result = Math.sqrt(stringEval(displayValue));
       setDisplayValue(result.toString());
-      if (inputHistory != '') { 
-          setInputHistory((prevHistory) => '√(' + prevHistory + ')');
+      if (inputHistory !== '') {
+        setInputHistory(oldHistory + result.toString());
       }
     } catch (error) {
       setDisplayValue('Error');
       setInputHistory('');
     }
-  }
+  };
+  
 
   const handlePercent = () => {
+    const operators = ['+', '-', '*', '/']; // List of operators
+    const operatorIndexes = [];
+    let oldHistory = "";
+  
     try {
+      operators.forEach((operator) => {
+        let index = inputHistory.lastIndexOf(operator);
+        if (index !== -1) {
+          operatorIndexes.push({ index, operator });
+        }
+      });
+  
+      if (operatorIndexes.length > 0) {
+        const lastOperatorIndex = operatorIndexes[operatorIndexes.length - 1].index;
+        oldHistory = inputHistory.substring(0, lastOperatorIndex + 1); // Adjust to include the operator
+      }
       const result = stringEval(displayValue + '/ 100');
       setDisplayValue(result.toString());
-      if (inputHistory != '') { 
-          setInputHistory((prevHistory) => '(' + prevHistory + ')%');
+      if (inputHistory !== '') {
+        setInputHistory(oldHistory + result.toString());
       }
     } catch (error) {
       setDisplayValue('Error');
       setInputHistory('');
     }
-  }
+  };
+  
 
   return (
     <div className="calculator">
