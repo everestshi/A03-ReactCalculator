@@ -45,11 +45,6 @@ const Calculator = () => {
       if (consecutiveDigitsCount >= 9 && !isOperator(value)) {
         return;
       } else {
-        // Reset display if it contains non-digit characters
-      if (!/^\d+$/.test(displayValue)) {
-        setDisplayValue(value.toString());
-        setInputHistory(value.toString());
-      } else {
         // Increment the counter only if the entered value is a digit
         if (/\d/.test(value)) {
           setConsecutiveDigitsCount((prevCount) => prevCount + 1);
@@ -70,7 +65,7 @@ const Calculator = () => {
         }
       });
       setInputHistory((prevHistory) => prevHistory + value);
-    }}}
+    }}
     } else if (type === 'operator') {
       setConsecutiveDigitsCount(0);
       setLastEvaluated(false);
@@ -192,7 +187,7 @@ const Calculator = () => {
 
   const handleSign = () => {
     try {
-      const result = stringEval(inputHistory + '*(-1)');
+      const result = stringEval(displayValue + '*(-1)');
       handleMemoryOperationResult(result);
     } catch (error) {
       handleMemoryOperationError();
