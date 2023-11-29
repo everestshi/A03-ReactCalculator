@@ -8,6 +8,25 @@ const Calculator = () => {
   const [inputHistory, setInputHistory] = useState('');
   
   const handleButtonClick = (value, type) => {
+    const maxDisplayLength = 10; // Set your desired maximum display length
+    const maxConsecutiveIntegers = 9; // Set the maximum consecutive integers allowed
+
+    if (type === 'number' && /\d/.test(value)) {
+      // Check if adding another integer would exceed the consecutive limit
+      const currentDisplay = displayValue.endsWith('.') ? displayValue.slice(0, -1) : displayValue;
+      const consecutiveIntegers = currentDisplay.replace(/\D/g, '');
+
+      if (consecutiveIntegers.length >= maxConsecutiveIntegers) {
+        // If the consecutive integer limit is reached, prevent further input
+        return;
+      }
+    }
+
+    if (displayValue.length >= maxDisplayLength) {
+      // If the display value has reached the limit, prevent further input
+      return;
+    }
+
     const isOperator = (char) => {
       return char === '+' || char === '-' || char === '*' || char === '/';
     };
@@ -102,8 +121,14 @@ const Calculator = () => {
       setStoredValue('0');
 
     } else if (value === 'Clear') {
-      setDisplayValue('0');
-      setInputHistory('');
+      // setDisplayValue('0');
+      // setInputHistory('');
+      setDisplayValue((prevDisplay) =>
+      prevDisplay.length > 1 ? prevDisplay.slice(0, -1) : '0'
+    );
+    setInputHistory((prevHistory) =>
+      prevHistory.length > 1 ? prevHistory.slice(0, -1) : ''
+    );
 
     }
   };
