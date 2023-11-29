@@ -19,6 +19,20 @@ const Calculator = () => {
       handleMemory(value);
     } else if (type === 'clear') {
       handleClear(value);
+    } else {
+      switch (type) {
+        case 'sign':
+          handleSign();
+          break;
+        case 'percent':
+          handlePercent();
+          break;
+        case 'sqrt':
+          handleSqrt();
+          break;
+        default:
+          break;
+      }
     }
   };
 
@@ -71,6 +85,48 @@ const Calculator = () => {
 
     }
   };
+
+  const handleSign = () => {
+    try {
+      const result = stringEval(displayValue + '*(-1)');
+      setDisplayValue(result.toString());
+      if (inputHistory.substring(0, 2) == '-('
+          && inputHistory.charAt(inputHistory.length-1) == ')') {
+            setInputHistory((prevHistory) => prevHistory.substring(2, inputHistory.length-1));
+      } else if (inputHistory != '') { 
+          setInputHistory((prevHistory) => '-(' + prevHistory + ')');
+      }
+    } catch (error) {
+      setDisplayValue('Error');
+      setInputHistory('');
+    }
+  }
+
+  const handleSqrt = () => {
+    try {
+      const result = Math.sqrt(stringEval(displayValue));
+      setDisplayValue(result.toString());
+      if (inputHistory != '') { 
+          setInputHistory((prevHistory) => '√(' + prevHistory + ')');
+      }
+    } catch (error) {
+      setDisplayValue('Error');
+      setInputHistory('');
+    }
+  }
+
+  const handlePercent = () => {
+    try {
+      const result = stringEval(displayValue + '/ 100');
+      setDisplayValue(result.toString());
+      if (inputHistory != '') { 
+          setInputHistory((prevHistory) => '(' + prevHistory + ')%');
+      }
+    } catch (error) {
+      setDisplayValue('Error');
+      setInputHistory('');
+    }
+  }
 
   return (
     <div className="calculator">
