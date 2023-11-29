@@ -3,7 +3,7 @@ import Calculator from './Calculator';
 const App = () => {
   return (
     <div className="app">
-        <p>Our Calculator App</p>
+        <h1>The Math Will Math</h1>
       <Calculator />
     </div>
   );

@@ -6,7 +6,7 @@ const Calculator = () => {
   const [displayValue, setDisplayValue] = useState('0');
   const [storedValue, setStoredValue] = useState('0');
   const [inputHistory, setInputHistory] = useState('');
-
+  
   const handleButtonClick = (value, type) => {
     if (type === 'number' || type === 'operator') {
       setDisplayValue((prevDisplay) =>
@@ -14,7 +14,7 @@ const Calculator = () => {
       );
       setInputHistory((prevHistory) => prevHistory + value);
     } else if (type === 'enter') {
-      calculateResult();
+      calculateResult(inputHistory + displayValue);
     } else if (type === 'memory') {
       handleMemory(value);
     } else if (type === 'clear') {
@@ -42,7 +42,7 @@ const Calculator = () => {
     try {
       const result = stringEval(displayValue);
       setDisplayValue(result.toString());
-      setInputHistory((prevHistory) => prevHistory);
+      setInputHistory(result.toString());
     } catch (error) {
       setDisplayValue('Error');
       setInputHistory('');
@@ -61,12 +61,12 @@ const Calculator = () => {
         setDisplayValue(storedValue);
         setInputHistory(storedValue);
         break;
-      case 'Memory Subtract':
-        setStoredValue((prevStored) => stringEval(prevStored + '-' + displayValue));
-        break;
-      case 'Memory Addition':
-        setStoredValue((prevStored) => stringEval(prevStored + '+' + displayValue));
-        break;
+        case 'Memory Subtract':
+          setDisplayValue((displayValue) => stringEval(displayValue + '-' + storedValue));
+          break;
+        case 'Memory Addition':
+          setDisplayValue((displayValue) => stringEval(displayValue + '+' + storedValue));
+          break;
       default:
         break;
     }
@@ -77,9 +77,11 @@ const Calculator = () => {
       setDisplayValue('0');
       setInputHistory('');
       setStoredValue('0');
+
     } else if (value === 'Clear') {
       setDisplayValue('0');
       setInputHistory('');
+
     }
   };
 
