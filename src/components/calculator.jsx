@@ -147,6 +147,7 @@ const Calculator = () => {
   const calculateResult = () => {
     try {
       const result = stringEval(inputHistory);
+      console.log(result)
   
       let formattedResult;
       if (Math.abs(result) > 1000000000) {
@@ -265,7 +266,6 @@ const Calculator = () => {
   const handleSqrt = () => {
     const operators = ['+', '-', '*', '/']; // List of operators
     const operatorIndexes = [];
-    let oldHistory = "";
   
     try {
       operators.forEach((operator) => {
@@ -275,16 +275,12 @@ const Calculator = () => {
         }
       });
   
-      if (operatorIndexes.length > 0) {
-        const lastOperatorIndex = operatorIndexes[operatorIndexes.length - 1].index;
-        oldHistory = inputHistory.substring(0, lastOperatorIndex + 1); // Adjust to include the operator
-      }
       const result = Math.sqrt(stringEval(displayValue));
       let formattedResult = result.toString();
       formattedResult = formattedResult.slice(0, MAX_RESULT_LENGTH);
       setDisplayValue(formattedResult);
       if (inputHistory !== '') {
-        setInputHistory(oldHistory + formattedResult);
+        setInputHistory(formattedResult);
       }
     } catch (error) {
       setDisplayValue('Error');
