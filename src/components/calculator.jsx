@@ -10,58 +10,56 @@ const Calculator = () => {
   const [lastEvaluated, setLastEvaluated] = useState(false);
   const [consecutiveDigitsCount, setConsecutiveDigitsCount] = useState(0);
 
-  const MAX_RESULT_LENGTH = 15; // Set your desired maximum result length
+  const MAX_RESULT_LENGTH = 13; // Set your desired maximum result length
 
   const isFloatingPointError = (num) => {
-    const epsilon = 1e-12; // Define your precision threshold here
+    const epsilon = 1e-14; // Define your precision threshold here
     return Math.abs(num - Math.floor(num)) > epsilon;
   };
   
   const roundIfNeeded = (num) => {
     if (isFloatingPointError(num)) {
-      return Math.round(num * 1e12) / 1e12; // Round to a specific precision (10 decimal places in this case)
+      return Math.round(num * 1e14) / 1e14; // Round to a specific precision (10 decimal places in this case)
     }
     return num;
   };
 
-// Function to trim trailing zeros after the decimal point
-const trimTrailingZeros = (num) => {
-  const numString = num.toString();
-  const indexOfDecimal = numString.indexOf('.');
-  
-  if (indexOfDecimal !== -1) {
-    let trimmedNum = numString.replace(/0+$/, ''); // Trim trailing zeros
-
-    // If it's a floating-point error, round the number
-    if (isFloatingPointError(parseFloat(num))) {
-      trimmedNum = roundIfNeeded(num).toString();
-    }
-
-    if (trimmedNum.charAt(trimmedNum.length - 1) === '.') {
-      trimmedNum = trimmedNum.slice(0, -1); // Remove the decimal point if it's the last character
-    }
-    return trimmedNum;
-  }
-  
-  return numString; // Return the number as is if it has no decimal part
-};
-
   const handleMemoryOperationResult = (result) => {
-    let formattedResult = result.toString();
   
+    let formattedResult;
+    if (Math.abs(result) > 1000000000) {
+      // Convert to exponential notation if the result is larger than 100,000,000
+      formattedResult = result.toExponential();
+    } else {
+      formattedResult = result.toString();
+    }
+
+    // Check if it's a floating-point error and round if needed
+    const numResult = parseFloat(result);
+    if (isFloatingPointError(numResult)) {
+      formattedResult = roundIfNeeded(numResult).toString();
+    }
+
+    // Convert extremely small numbers to exponential notation
+    if (Math.abs(numResult) > 0 && Math.abs(numResult) < 1e-14) {
+      formattedResult = numResult.toExponential(MAX_RESULT_LENGTH - 6);
+      formattedResult = formattedResult.replace(/(\d+(\.\d*?)?)0+e/, '$1e'); // Remove trailing zeros after e in exponential notation
+    }
+
     // Truncate the result if it exceeds the maximum length
     if (formattedResult.includes('e')) {
-      // If in exponential notation
       const [mantissa, exponent] = formattedResult.split('e');
-      const maxMantissaLength = MAX_RESULT_LENGTH - exponent.length - 1; // Leave space for the 'e' and exponent
+      const maxMantissaLength = MAX_RESULT_LENGTH - exponent.length - 1;
       formattedResult = mantissa.slice(0, maxMantissaLength) + 'e' + exponent;
+    } else if (formattedResult.includes('.') && formattedResult.includes('e-')) {
+      // Remove trailing zeros before 'e' in exponential notation
+      formattedResult = formattedResult.replace(/(\.\d*?)0+(?=e-)/, '$1');
     } else if (formattedResult.length > MAX_RESULT_LENGTH) {
-      // If in regular numeric form
       formattedResult = formattedResult.slice(0, MAX_RESULT_LENGTH);
     }
-    console.log(formattedResult);
-    setDisplayValue(trimTrailingZeros(formattedResult));
-    setInputHistory(trimTrailingZeros(formattedResult));
+
+    setDisplayValue(formattedResult);
+    setInputHistory(formattedResult);
   };
   
   const handleMemoryOperationError = () => {
@@ -103,7 +101,6 @@ const trimTrailingZeros = (num) => {
     } else if (type === 'operator') {
       setConsecutiveDigitsCount(0);
       setLastEvaluated(false);
-      setHasPoint(false);
       const lastInput = inputHistory[inputHistory.length - 1];
       if (isOperator(lastInput)) {
         setInputHistory((prevHistory) => prevHistory.slice(0, -1) + value);
@@ -120,6 +117,7 @@ const trimTrailingZeros = (num) => {
       handleMemory(value);
     } else if (type === 'clear') {
       setConsecutiveDigitsCount(0);
+      setHasPoint(false);
 
       handleClear(value);
     } else {
@@ -141,78 +139,102 @@ const trimTrailingZeros = (num) => {
 
   const stringEval = (fn) => new Function('return ' + fn)();
 
-const calculateResult = () => {
-  try {
-    const result = stringEval(inputHistory);
-
-    let formattedResult;
-    if (Math.abs(result) > 1000000000) {
-      // Convert to exponential notation if the result is larger than 100,000,000
-      formattedResult = result.toExponential();
-    } else {
-      formattedResult = result.toString();
-    }
-
-    // Check if it's a floating-point error and round if needed
-    const numResult = parseFloat(result);
-    if (isFloatingPointError(numResult)) {
-      formattedResult = roundIfNeeded(numResult).toString();
-    }
-
-    // Truncate the result if it exceeds the maximum length
-    if (formattedResult.includes('e')) {
-      // If in exponential notation
-      const [mantissa, exponent] = formattedResult.split('e');
-      const maxMantissaLength = MAX_RESULT_LENGTH - exponent.length - 1; // Leave space for the 'e' and exponent
-      formattedResult = mantissa.slice(0, maxMantissaLength) + 'e' + exponent;
-    } else if (formattedResult.length > MAX_RESULT_LENGTH) {
-      // If in regular numeric form
-      formattedResult = formattedResult.slice(0, MAX_RESULT_LENGTH);
-    }
-
-    setDisplayValue(formattedResult);
-    setInputHistory(formattedResult);
-  } catch (error) {
-    handleMemoryOperationError();
-  }
-};
-
-
-  const handleMemory = (value) => {
-    const isInteger = /^\d+$/.test(displayValue);
-    switch (value) {
-      case 'Memory Save':
-        if (isInteger){
-          setStoredValue(displayValue);
-        }
-        break;
-      case 'Memory Clear':
-        setStoredValue('0');
-        break;
-      case 'Memory Recall':
-        setDisplayValue(storedValue);
-        setInputHistory(storedValue)
-        break;
-        case 'Memory Subtract':
-          try {
-            const result = stringEval(displayValue + '-' + storedValue);
-            handleMemoryOperationResult(result);
-          } catch (error) {
-            handleMemoryOperationError();
-          }
-          break;
-        case 'Memory Addition':
-          try {
-            const result = stringEval(displayValue + '+' + storedValue);
-            handleMemoryOperationResult(result);
-          } catch (error) {
-            handleMemoryOperationError();
-          }
-          break;
-      default:
-        break;
+  const calculateResult = () => {
+    try {
+      const result = stringEval(inputHistory);
+  
+      let formattedResult;
+      if (Math.abs(result) > 1000000000) {
+        // Convert to exponential notation if the result is larger than 100,000,000
+        formattedResult = result.toExponential();
+      } else {
+        formattedResult = result.toString();
+      }
+  
+      // Check if it's a floating-point error and round if needed
+      const numResult = parseFloat(result);
+      if (isFloatingPointError(numResult)) {
+        formattedResult = roundIfNeeded(numResult).toString();
+      }
+  
+      // Convert extremely small numbers to exponential notation
+      if (Math.abs(numResult) > 0 && Math.abs(numResult) < 1e-14) {
+        formattedResult = numResult.toExponential(MAX_RESULT_LENGTH - 6);
+        formattedResult = formattedResult.replace(/(\d+(\.\d*?)?)0+e/, '$1e'); // Remove trailing zeros after e in exponential notation
+      }
+  
+      // Truncate the result if it exceeds the maximum length
+      if (formattedResult.includes('e')) {
+        const [mantissa, exponent] = formattedResult.split('e');
+        const maxMantissaLength = MAX_RESULT_LENGTH - exponent.length - 1;
+        formattedResult = mantissa.slice(0, maxMantissaLength) + 'e' + exponent;
+      } else if (formattedResult.includes('.') && formattedResult.includes('e-')) {
+        // Remove trailing zeros before 'e' in exponential notation
+        formattedResult = formattedResult.replace(/(\.\d*?)0+(?=e-)/, '$1');
+      } else if (formattedResult.length > MAX_RESULT_LENGTH) {
+        formattedResult = formattedResult.slice(0, MAX_RESULT_LENGTH);
+      }
+  
+      setDisplayValue(formattedResult);
+      setInputHistory(formattedResult);
+    } catch (error) {
+      handleMemoryOperationError();
     }
   };
+  
+  
+
+
+  const handleMemory = (value) => {  
+    try {
+      if (displayValue.includes('e')) {
+        const [firstValue, secondValue] = displayValue.split('e');
+        const result = stringEval(`${firstValue}${value}${secondValue}`);
+        handleMemoryOperationResult(result);
+      } else {
+        switch (value) {
+          case 'Memory Save':
+            if (!isNaN(displayValue) && displayValue !== 'Error' && displayValue !== 'Infinity') {
+              setStoredValue(displayValue);
+            }
+            break;
+          case 'Memory Clear':
+            setStoredValue('0');
+            break;
+          case 'Memory Recall':
+            setDisplayValue(storedValue);
+            setInputHistory(storedValue);
+            break;
+            case 'Memory Subtract':
+              try {
+                let resultSubtract = '';
+                if (displayValue.startsWith('-') && storedValue.startsWith('-')) {
+                  resultSubtract = stringEval(`(${displayValue}) - (${storedValue})`);
+                } else {
+                  resultSubtract = stringEval(`${displayValue} - ${storedValue}`);
+                }
+                handleMemoryOperationResult(resultSubtract);
+              } catch (error) {
+                handleMemoryOperationError();
+              }
+              break;
+          case 'Memory Addition':
+            try {
+              const result = stringEval(displayValue + '+' + storedValue);
+              handleMemoryOperationResult(result);
+            } catch (error) {
+              handleMemoryOperationError();
+            }
+            break;
+          default:
+            break;
+        }
+      }
+    } catch (error) {
+      handleMemoryOperationError();
+    }
+  };
+  
 
   const handleClear = (value) => {
     if (value === 'All Clear') {
@@ -238,6 +260,7 @@ const calculateResult = () => {
   const handleSqrt = () => {
     const operators = ['+', '-', '*', '/']; // List of operators
     const operatorIndexes = [];
+    let oldHistory = "";
   
     try {
       operators.forEach((operator) => {
@@ -247,11 +270,20 @@ const calculateResult = () => {
         }
       });
   
+      if (operatorIndexes.length > 0) {
+        const lastOperatorIndex = operatorIndexes[operatorIndexes.length - 1].index;
+        oldHistory = inputHistory.substring(0, lastOperatorIndex + 1); // Adjust to include the operator
+      }
       const result = Math.sqrt(stringEval(displayValue));
-      handleMemoryOperationResult(result);
-
+      let formattedResult = result.toString();
+      formattedResult = formattedResult.slice(0, MAX_RESULT_LENGTH);
+      setDisplayValue(formattedResult);
+      if (inputHistory !== '') {
+        setInputHistory(oldHistory + formattedResult);
+      }
     } catch (error) {
-      handleMemoryOperationError();
+      setDisplayValue('Error');
+      setInputHistory('');
     }
   };
   
@@ -270,6 +302,8 @@ const calculateResult = () => {
   
       const result = stringEval(displayValue + '/ 100');
       handleMemoryOperationResult(result);
+      setLastEvaluated(true); // Set the evaluation state
+
 
     } catch (error) {
       handleMemoryOperationError();
