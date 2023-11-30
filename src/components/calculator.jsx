@@ -98,7 +98,7 @@ const Calculator = () => {
         }
       });
       setInputHistory((prevHistory) =>
-        prevHistory + (value == '.' && isOperator(inputHistory[inputHistory.length - 1])? '0' : '') + value);   
+        prevHistory + (value == '.' && (prevHistory.length == 0 || isOperator(inputHistory[inputHistory.length - 1]))? '0' : '') + value);   
         }
   }
     } else if (type === 'operator') {
