@@ -85,22 +85,26 @@ const Calculator = () => {
       if (!hasPoint && value === '.') setHasPoint(true);
       if (lastEvaluated) {
         // Clear the display and input history after an evaluation
-        setDisplayValue(value.toString());
-        setInputHistory(value.toString());
+        // If pressed decimal point button when there is no number, add a zero before it
+        setDisplayValue((value == '.' ? '0' : '') + value.toString()); 
+        setInputHistory((value == '.' ? '0' : '') + value.toString());
         setLastEvaluated(false);
       } else {
       setDisplayValue((prevDisplay) => {
         if (isOperator(inputHistory[inputHistory.length - 1])) {
-          return value.toString();
+          return (value == '.' ? '0' : '') + value.toString();
         } else {
-          return prevDisplay === '0' ? value.toString() : prevDisplay + value;
+          return prevDisplay === '0' ? ((value == '.' ? '0' : '') + value.toString()) : prevDisplay + value;
         }
       });
-      setInputHistory((prevHistory) => prevHistory + value);
-    }}
+      setInputHistory((prevHistory) =>
+        prevHistory + (value == '.' && (prevHistory.length == 0 || isOperator(inputHistory[inputHistory.length - 1]))? '0' : '') + value);   
+        }
+  }
     } else if (type === 'operator') {
       setConsecutiveDigitsCount(0);
       setLastEvaluated(false);
+      setHasPoint(false);
       const lastInput = inputHistory[inputHistory.length - 1];
       if (isOperator(lastInput)) {
         setInputHistory((prevHistory) => prevHistory.slice(0, -1) + value);
@@ -113,6 +117,7 @@ const Calculator = () => {
     } else if (type === 'enter') {
       calculateResult(inputHistory);
       setLastEvaluated(true); // Set the evaluation state
+      setHasPoint(false);
     } else if (type === 'memory') {
       handleMemory(value);
     } else if (type === 'clear') {
